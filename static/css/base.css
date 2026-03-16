@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Sora:wght@400;600;700&display=swap');
+
+/* ═══════════════════════════════════════════
+   NEXUSFLOW — Design System
+   Tema: Light · Azul profissional
+═══════════════════════════════════════════ */
+:root {
+  /* Cores principais */
+  --blue-50:  #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+  --blue-900: #1e3a8a;
+
+  /* Backgrounds */
+  --bg:       #f8fafc;
+  --bg2:      #ffffff;
+  --bg3:      #f1f5f9;
+  --bg-sidebar: #0f172a;
+
+  /* Bordas */
+  --border:       #e2e8f0;
+  --border-blue:  rgba(59,130,246,0.25);
+
+  /* Cores semânticas */
+  --accent:   #2563eb;
+  --accent-h: #1d4ed8;
+  --accent-l: #eff6ff;
+
+  --success:  #10b981;
+  --success-l:#d1fae5;
+  --warning:  #f59e0b;
+  --warning-l:#fef3c7;
+  --danger:   #ef4444;
+  --danger-l: #fee2e2;
+  --info:     #06b6d4;
+  --info-l:   #cffafe;
+
+  /* Texto */
+  --text:    #0f172a;
+  --text2:   #475569;
+  --text3:   #94a3b8;
+  --text-inv:#ffffff;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow:    0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
+  --shadow-md: 0 8px 24px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.06);
+  --shadow-lg: 0 20px 48px rgba(15,23,42,0.12), 0 8px 16px rgba(15,23,42,0.06);
+
+  /* Layout */
+  --sidebar-w: 256px;
+  --topbar-h:  60px;
+  --radius:    10px;
+  --radius-lg: 14px;
+}
+
+/* ── RESET ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg3); }
+::-webkit-scrollbar-thumb { background: var(--blue-200); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--blue-400); }
+
+/* ── UTILITÁRIOS ── */
+.flex         { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.w-full { width: 100%; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.font-sora { font-family: 'Sora', sans-serif; }

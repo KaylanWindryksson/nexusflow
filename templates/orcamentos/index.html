@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Orçamentos{% endblock %}
+{% block page_title %}Orçamentos{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('orcamentos.novo') }}" class="btn btn-primary btn-sm">
+  <span>◇</span> <span class="label">Novo</span>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Cliente</th>
+          <th>Serviço</th>
+          <th class="hide-mobile">Data</th>
+          <th>Valor</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for orc in orcamentos %}
+        <tr>
+          <td style="color:var(--text3);font-size:11px">#{{ '%04d' % orc.id }}</td>
+          <td class="td-main">{{ orc.cliente.nome }}</td>
+          <td>{{ orc.servico.nome }}</td>
+          <td class="hide-mobile">{{ orc.data_orcamento.strftime('%d/%m/%Y') }}</td>
+          <td>R$ {{ '%.2f'|format(orc.valor_final) }}</td>
+          <td>
+            <span class="badge badge-{{ 'gold' if orc.status=='pendente' else ('green' if orc.status=='confirmado' else 'red') }}">
+              {{ orc.status }}
+            </span>
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <!-- Botão PDF sempre disponível -->
+              <a href="{{ url_for('orcamentos.pdf', id=orc.id) }}" target="_blank"
+                 class="btn btn-gold btn-sm" title="Baixar PDF do Orçamento">
+                📄
+              </a>
+              {% if orc.status == 'pendente' %}
+              <button onclick="confirmarOrcamento({{ orc.id }})"
+                      class="btn btn-success btn-sm">✓</button>
+              <button onclick="cancelar({{ orc.id }})"
+                      class="btn btn-danger btn-sm">✕</button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <span class="empty-icon">◇</span>
+              <h3>Nenhum orçamento ainda</h3>
+              <p>Crie seu primeiro orçamento</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+async function cancelar(id) {
+  if (!confirm('Cancelar este orçamento?')) return;
+  await fetch(`/orcamentos/${id}/cancelar`, { method: 'POST' });
+  location.reload();
+}
+</script>
+{% endblock %}
+{% endblock %}

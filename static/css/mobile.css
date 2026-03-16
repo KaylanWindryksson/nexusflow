@@ -1,0 +1,101 @@
+/* ═══════════════════════════════════════════
+   NEXUSFLOW — Mobile First
+═══════════════════════════════════════════ */
+
+/* ── DESKTOP (padrão, sidebar visível) ── */
+@media (min-width: 769px) {
+  .modal-overlay { align-items: center; padding: 20px; }
+  .modal {
+    border-radius: var(--radius-lg);
+    max-width: 560px;
+    max-height: 90vh;
+    transform: translateY(16px) scale(0.98);
+    padding: 28px;
+  }
+  .modal::before { display: none; }
+  .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+  .cards-grid { grid-template-columns: repeat(4, 1fr); }
+  .form-grid  { grid-template-columns: repeat(2, 1fr); }
+  table { min-width: unset; }
+}
+
+/* ── TABLET ── */
+@media (max-width: 1024px) {
+  :root { --sidebar-w: 220px; }
+}
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  /* Sidebar vira drawer */
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+    width: 260px;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 40px rgba(15,23,42,0.25);
+  }
+  .sidebar-overlay.open { display: block; }
+  .hamburger { display: flex; }
+  .main { margin-left: 0; }
+
+  /* Topbar */
+  .topbar { padding: 0 14px; }
+  .page-title { font-size: 15px; }
+  .topbar-actions .btn .label { display: none; }
+  .topbar-actions .btn { padding: 7px 10px; }
+
+  /* Content */
+  .content { padding: 14px; }
+
+  /* Cards grid — 2 colunas */
+  .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stat-card { padding: 14px 16px; }
+  .stat-value { font-size: 20px; }
+  .stat-icon-wrap { width: 34px; height: 34px; font-size: 16px; margin-bottom: 10px; }
+
+  /* Formulários 1 coluna */
+  .form-grid { grid-template-columns: 1fr; gap: 12px; }
+
+  /* Tabela scroll */
+  .table-wrap { border-radius: var(--radius); }
+  table { min-width: 480px; }
+
+  /* Esconder colunas não essenciais */
+  .hide-mobile { display: none !important; }
+
+  /* Grids */
+  .dashboard-grid  { grid-template-columns: 1fr !important; }
+  .agenda-grid     { grid-template-columns: 1fr !important; }
+  .report-grid     { grid-template-columns: 1fr !important; }
+  .detalhe-grid    { grid-template-columns: 1fr !important; }
+
+  /* Notificação */
+  #notification { bottom: 14px; right: 14px; left: 14px; }
+
+  /* Modal bottom sheet */
+  .modal { max-height: 90dvh; padding: 20px 16px 40px; }
+}
+
+/* ── PHONE PEQUENO ── */
+@media (max-width: 480px) {
+  .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stat-value { font-size: 18px; }
+  :root { --sidebar-w: 260px; }
+}
+
+/* ── iOS safe areas ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .modal   { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+  .sidebar { padding-bottom: env(safe-area-inset-bottom); }
+  .content { padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+}
+
+/* ── Tap highlight global ── */
+a, button, [role="button"] { -webkit-tap-highlight-color: transparent; }
+
+/* ── iOS zoom prevention ── */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  select, textarea, input { font-size: 16px !important; }
+}

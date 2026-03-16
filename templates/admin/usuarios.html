@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Usuários{% endblock %}
+{% block page_title %}Gestão de Usuários{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('admin.usuario_novo') }}" class="btn btn-primary btn-sm">+ Novo</a>
+{% endblock %}
+
+{% block content %}
+<div class="alert alert-info" style="margin-bottom:20px">
+  ⚙ Painel Admin — cada usuário tem seus próprios dados isolados (multi-tenant).
+  Para modelo SaaS com mensalidade, integre Stripe/Mercado Pago à tabela de planos.
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th><th>E-mail</th><th>Plano</th>
+          <th>Status</th><th>Criado em</th><th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in usuarios %}
+        <tr>
+          <td class="td-main">{{ u.nome }}</td>
+          <td>{{ u.email }}</td>
+          <td><span class="badge badge-purple">{{ u.plano }}</span></td>
+          <td>
+            <span class="badge badge-{{ 'green' if u.ativo else 'red' }}">
+              {{ 'ativo' if u.ativo else 'inativo' }}
+            </span>
+          </td>
+          <td class="hide-mobile">{{ u.criado_em.strftime('%d/%m/%Y') }}</td>
+          <td>
+            {% if u.id != current_user.id %}
+            <button onclick="toggleUsuario({{ u.id }}, {{ u.ativo|tojson }})"
+                    class="btn btn-sm btn-{{ 'danger' if u.ativo else 'success' }}">
+              {{ 'Desativar' if u.ativo else 'Ativar' }}
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+async function toggleUsuario(id, ativo) {
+  const acao = ativo ? 'desativar' : 'ativar';
+  if (!confirm(`Deseja ${acao} este usuário?`)) return;
+  await fetch(`/admin/usuarios/${id}/toggle`, { method: 'POST' });
+  showNotification('Usuário atualizado!');
+  setTimeout(() => location.reload(), 1200);
+}
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('orcamentos.novo') }}" class="btn btn-primary btn-sm">
+  + <span class="label">Novo orçamento</span>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="cards-grid">
+  <div class="stat-card blue">
+    <div class="stat-icon-wrap">👥</div>
+    <div class="stat-value">{{ total_clientes }}</div>
+    <div class="stat-label">Total de clientes</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon-wrap">📅</div>
+    <div class="stat-value">{{ sessoes_mes }}</div>
+    <div class="stat-label">Sessões este mês</div>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-icon-wrap">💰</div>
+    <div class="stat-value">R$ {{ '%.0f'|format(receita_mes) }}</div>
+    <div class="stat-label">Receita do mês</div>
+  </div>
+  <div class="stat-card cyan">
+    <div class="stat-icon-wrap">📋</div>
+    <div class="stat-value">{{ pendentes }}</div>
+    <div class="stat-label">Orçamentos pendentes</div>
+  </div>
+</div>
+
+<div class="dashboard-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📅 Próximas sessões</span>
+      <a href="{{ url_for('agenda.index') }}" class="btn btn-secondary btn-sm">Ver agenda</a>
+    </div>
+    {% if proximos %}
+      {% for ag in proximos %}
+      <div class="event-item">
+        <div class="event-time">{{ ag.data_hora.strftime('%H:%M') }}</div>
+        <div class="event-info">
+          <div class="event-client">{{ ag.cliente.nome }}</div>
+          <div class="event-service">{{ ag.servico.nome }} · {{ ag.data_hora.strftime('%d/%m') }}</div>
+        </div>
+        <span class="badge badge-blue">agendado</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:28px 16px;">
+        <span class="empty-icon">📅</span>
+        <p>Nenhuma sessão agendada</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">⚡ Ações rápidas</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <a href="{{ url_for('clientes.novo') }}" class="btn btn-secondary" style="justify-content:flex-start;">👤 Cadastrar nova cliente</a>
+      <a href="{{ url_for('orcamentos.novo') }}" class="btn btn-secondary" style="justify-content:flex-start;">📋 Criar orçamento</a>
+      <a href="{{ url_for('agenda.index') }}" class="btn btn-secondary" style="justify-content:flex-start;">📅 Agendar sessão</a>
+      <a href="{{ url_for('relatorios.index') }}" class="btn btn-secondary" style="justify-content:flex-start;">📈 Ver relatórios</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="flex-wrap:wrap;gap:10px;">
+    <div>
+      <div class="card-title" style="color:#92400e;">⚠ Clientes sem retorno — +90 dias</div>
+      <p style="font-size:12px;color:var(--text3);margin-top:3px;">Clientes que não realizaram atendimento há mais de 3 meses</p>
+    </div>
+    {% if inativos %}<span class="badge badge-amber">{{ inativos|length }} cliente{{ 's' if inativos|length > 1 else '' }}</span>{% endif %}
+  </div>
+  {% if inativos %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Nome</th><th>WhatsApp</th><th class="hide-mobile">E-mail</th><th>Último serviço</th><th>Última sessão</th><th>Inativo há</th><th>Contato</th></tr>
+      </thead>
+      <tbody>
+        {% for item in inativos %}
+        {% set cl = item.cliente %}
+        {% set tel_raw = (cl.whatsapp or cl.telefone or '')|replace('(','') |replace(')','') |replace(' ','') |replace('-','') %}
+        <tr>
+          <td><a href="{{ url_for('clientes.detalhe', id=cl.id) }}" style="color:var(--text);font-weight:600;text-decoration:none;">{{ cl.nome }}</a></td>
+          <td>{{ cl.whatsapp or cl.telefone or '—' }}</td>
+          <td class="hide-mobile">{{ cl.email or '—' }}</td>
+          <td>{{ item.ultimo_servico }}</td>
+          <td>{{ item.ultimo_agendamento.strftime('%d/%m/%Y') }}</td>
+          <td><span class="badge badge-amber">{{ item.dias }} dias</span></td>
+          <td>
+            {% if tel_raw %}
+            <a href="https://wa.me/55{{ tel_raw }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">💬 WhatsApp</a>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:36px;">
+    <span class="empty-icon">✅</span>
+    <h3>Nenhum cliente inativo</h3>
+    <p>Todas as clientes estão ativas nos últimos 3 meses</p>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+@media(max-width:768px){.dashboard-grid{grid-template-columns:1fr !important;}}
+</style>
+{% endblock %}

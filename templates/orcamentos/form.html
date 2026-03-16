@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Novo Orçamento{% endblock %}
+{% block page_title %}Novo Orçamento{% endblock %}
+
+{% block content %}
+
+<div style="display:flex; gap:10px; margin-bottom:20px;">
+  <a href="{{ url_for('orcamentos.index') }}" class="btn btn-secondary btn-sm">
+    ← Orçamentos
+  </a>
+</div>
+
+<div class="card" style="max-width:620px; margin:0 auto;">
+
+  <div style="margin-bottom:24px;">
+    <div style="font-family:'Cormorant Garamond',serif; font-size:22px;
+                font-style:italic; color:var(--accent);">
+      Criar Orçamento
+    </div>
+    <p style="font-size:12px; color:var(--text3); margin-top:4px;">
+      Preencha os dados para gerar o orçamento da consulente
+    </p>
+  </div>
+
+  <form method="post" id="formOrcamento">
+
+    <div class="form-group">
+      <label class="form-label">Cliente *</label>
+      <select name="cliente_id" class="form-control" required>
+        <option value="">Selecione a cliente...</option>
+        {% for cl in clientes %}
+        <option value="{{ cl.id }}"
+          {{ 'selected' if cliente_id and cl.id == cliente_id|int else '' }}>
+          {{ cl.nome }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Serviço *</label>
+      <select name="servico_id" class="form-control" required
+              id="selectServico" onchange="atualizarValor()">
+        <option value="">Selecione o serviço...</option>
+        {% for sv in servicos %}
+        <option value="{{ sv.id }}"
+                data-valor="{{ sv.valor }}"
+                data-dur="{{ sv.duracao_minutos }}">
+          {{ sv.nome }} — {{ sv.duracao_minutos }}min — R$ {{ '%.2f'|format(sv.valor) }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Resumo de valores -->
+    <div style="background:rgba(200,170,255,0.05); border:1px solid var(--border);
+                border-radius:12px; padding:16px; margin:16px 0;" id="boxValores">
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Valor do Serviço</label>
+          <input type="text" id="displayValor" class="form-control"
+                 placeholder="—" readonly
+                 style="opacity:0.6; cursor:default;">
+        </div>
+
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Desconto (R$)</label>
+          <input type="number" name="desconto" id="inputDesconto"
+                 class="form-control" value="0" min="0" step="0.01"
+                 oninput="calcularFinal()">
+        </div>
+      </div>
+
+      <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11px; color:var(--text3); letter-spacing:1px; text-transform:uppercase;">
+            Total
+          </span>
+          <span id="displayFinal"
+                style="font-family:'Cinzel',serif; font-size:20px; color:var(--accent3);">
+            —
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Observações</label>
+      <textarea name="observacoes" class="form-control" rows="3"
+                placeholder="Validade do orçamento, condições especiais, anotações..."></textarea>
+    </div>
+
+    <!-- Botões -->
+    <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
+      <a href="{{ url_for('orcamentos.index') }}"
+         class="btn btn-secondary" style="flex:1;">Cancelar</a>
+      <button type="submit" class="btn btn-primary" style="flex:2;">
+        ◇ Criar Orçamento
+      </button>
+    </div>
+
+  </form>
+</div>
+
+
+{% block scripts %}
+<script>
+let valorBase = 0;
+
+function atualizarValor() {
+  const sel  = document.getElementById('selectServico');
+  const opt  = sel.options[sel.selectedIndex];
+  valorBase  = parseFloat(opt.dataset.valor || 0);
+
+  document.getElementById('displayValor').value =
+    valorBase ? 'R$ ' + valorBase.toFixed(2).replace('.', ',') : '—';
+
+  calcularFinal();
+}
+
+function calcularFinal() {
+  const desc  = parseFloat(document.getElementById('inputDesconto').value || 0);
+  const final = Math.max(0, valorBase - desc);
+  document.getElementById('displayFinal').textContent =
+    valorBase ? 'R$ ' + final.toFixed(2).replace('.', ',') : '—';
+}
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Serviços{% endblock %}
+{% block page_title %}Serviços{% endblock %}
+
+{% block topbar_actions %}
+<button onclick="abrirModalNovo()" class="btn btn-primary btn-sm">
+  <span>❋</span>
+  <span class="label">Novo</span>
+</button>
+{% endblock %}
+
+{% block content %}
+
+<div class="card" style="padding:0; overflow:hidden;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Serviço</th>
+          <th class="hide-mobile">Descrição</th>
+          <th>Duração</th>
+          <th>Valor</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sv in servicos %}
+        <tr>
+          <td class="td-main">{{ sv.nome }}</td>
+          <td class="hide-mobile" style="max-width:200px; overflow:hidden;
+              text-overflow:ellipsis; white-space:nowrap; color:var(--text3); font-size:12px;">
+            {{ sv.descricao or '—' }}
+          </td>
+          <td style="white-space:nowrap;">{{ sv.duracao_minutos }} min</td>
+          <td style="white-space:nowrap; color:var(--accent3);">
+            R$ {{ '%.2f'|format(sv.valor) }}
+          </td>
+          <td>
+            <span class="badge badge-{{ 'green' if sv.ativo else 'gray' }}">
+              {{ 'ativo' if sv.ativo else 'inativo' }}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <button onclick="abrirModalEditar(
+                {{ sv.id }},
+                {{ sv.nome | tojson }},
+                {{ (sv.descricao or '') | tojson }},
+                {{ sv.duracao_minutos }},
+                {{ sv.valor }},
+                {{ sv.ativo | tojson }}
+              )" class="btn btn-primary btn-sm">Editar</button>
+
+              <button onclick="toggleServico({{ sv.id }}, {{ sv.ativo | tojson }})"
+                      class="btn btn-sm {{ 'btn-danger' if sv.ativo else 'btn-success' }}">
+                {{ 'Desativar' if sv.ativo else 'Ativar' }}
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <span class="empty-icon">❋</span>
+              <h3>Nenhum serviço cadastrado</h3>
+              <p>Cadastre os serviços que você oferece</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ── MODAL CRIAR / EDITAR SERVIÇO ── -->
+<div class="modal-overlay" id="modalServico">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modalServicoTitulo">Novo Serviço</h2>
+      <button class="modal-close" onclick="closeModal('modalServico')">✕</button>
+    </div>
+
+    <input type="hidden" id="svId">
+
+    <div class="form-group">
+      <label class="form-label">Nome do Serviço *</label>
+      <input type="text" id="svNome" class="form-control"
+             placeholder="Ex: Leitura de Tarot, Reiki...">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <textarea id="svDescricao" class="form-control" rows="2"
+                placeholder="Breve descrição do serviço..."></textarea>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Duração (minutos) *</label>
+        <select id="svDuracao" class="form-control">
+          {% for dur in [30, 45, 60, 75, 90, 120] %}
+          <option value="{{ dur }}" {{ 'selected' if dur == 60 else '' }}>
+            {{ dur }} min
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Valor (R$) *</label>
+        <input type="number" id="svValor" class="form-control"
+               step="0.01" min="0" placeholder="0,00">
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn btn-secondary" style="flex:1"
+              onclick="closeModal('modalServico')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:2"
+              onclick="salvarServico()">✦ Salvar Serviço</button>
+    </div>
+  </div>
+</div>
+
+
+{% block scripts %}
+<script>
+function abrirModalNovo() {
+  document.getElementById('modalServicoTitulo').textContent = 'Novo Serviço';
+  document.getElementById('svId').value = '';
+  document.getElementById('svNome').value = '';
+  document.getElementById('svDescricao').value = '';
+  document.getElementById('svDuracao').value = '60';
+  document.getElementById('svValor').value = '';
+  openModal('modalServico');
+}
+
+function abrirModalEditar(id, nome, desc, dur, valor, ativo) {
+  document.getElementById('modalServicoTitulo').textContent = 'Editar Serviço';
+  document.getElementById('svId').value = id;
+  document.getElementById('svNome').value = nome;
+  document.getElementById('svDescricao').value = desc;
+  document.getElementById('svDuracao').value = dur;
+  document.getElementById('svValor').value = valor;
+  openModal('modalServico');
+}
+
+async function salvarServico() {
+  const nome = document.getElementById('svNome').value.trim();
+  const valor = document.getElementById('svValor').value;
+
+  if (!nome || !valor) {
+    showNotification('⚠ Preencha nome e valor', 'danger');
+    return;
+  }
+
+  const id = document.getElementById('svId').value;
+  const payload = {
+    id: id || null,
+    nome,
+    descricao: document.getElementById('svDescricao').value,
+    duracao:   document.getElementById('svDuracao').value,
+    valor:     parseFloat(valor),
+  };
+
+  const res = await fetch('/servicos/api/salvar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const json = await res.json();
+  if (json.ok) {
+    closeModal('modalServico');
+    showNotification('❋ Serviço salvo com sucesso!');
+    setTimeout(() => location.reload(), 1400);
+  } else {
+    showNotification('Erro ao salvar serviço', 'danger');
+  }
+}
+
+async function toggleServico(id, ativo) {
+  const acao = ativo ? 'desativar' : 'ativar';
+  if (!confirm(`Deseja ${acao} este serviço?`)) return;
+
+  const res = await fetch(`/servicos/api/${id}/toggle`, { method: 'POST' });
+  const json = await res.json();
+  if (json.ok) {
+    showNotification(ativo ? 'Serviço desativado' : '✦ Serviço ativado!');
+    setTimeout(() => location.reload(), 1200);
+  }
+}
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}{{ cliente.nome }}{% endblock %}
+{% block page_title %}{{ cliente.nome }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('clientes.editar', id=cliente.id) }}" class="btn btn-primary btn-sm">
+  ✎ <span class="label">Editar</span>
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Navegação -->
+<div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+  <a href="{{ url_for('clientes.index') }}" class="btn btn-secondary btn-sm">← Clientes</a>
+  <a href="{{ url_for('orcamentos.novo') }}?cliente_id={{ cliente.id }}"
+     class="btn btn-secondary btn-sm">◇ Novo Orçamento</a>
+</div>
+
+<div class="detalhe-grid" style="display:grid; grid-template-columns:280px 1fr; gap:16px; align-items:start;">
+
+  <!-- ── PERFIL ── -->
+  <div style="display:flex; flex-direction:column; gap:14px;">
+
+    <!-- Card principal -->
+    <div class="card" style="text-align:center;">
+      <div style="width:64px; height:64px; border-radius:50%;
+                  background:linear-gradient(135deg,var(--accent),var(--accent2));
+                  display:flex; align-items:center; justify-content:center;
+                  font-size:26px; margin:0 auto 14px;">◉</div>
+
+      <h2 style="font-family:'Cormorant Garamond',serif; font-size:22px;
+                 font-style:italic; margin-bottom:4px;">{{ cliente.nome }}</h2>
+
+      {% if cliente.como_conheceu %}
+      <span class="badge badge-purple" style="margin-bottom:16px;">
+        via {{ cliente.como_conheceu }}
+      </span>
+      {% endif %}
+
+      <!-- Stats rápidos -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px;">
+        <div style="background:rgba(200,170,255,0.07); border-radius:10px; padding:12px 8px;">
+          <div style="font-family:'Cinzel',serif; font-size:20px; color:var(--accent);">
+            {{ historico | selectattr('status','equalto','realizado') | list | length }}
+          </div>
+          <div style="font-size:9px; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-top:2px;">
+            Sessões
+          </div>
+        </div>
+        <div style="background:rgba(232,200,122,0.07); border-radius:10px; padding:12px 8px;">
+          <div style="font-family:'Cinzel',serif; font-size:20px; color:var(--gold);">
+            {{ historico | selectattr('status','equalto','agendado') | list | length }}
+          </div>
+          <div style="font-size:9px; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-top:2px;">
+            Agendadas
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contato -->
+    <div class="card">
+      <p style="font-size:10px; color:var(--text3); letter-spacing:1.5px;
+                text-transform:uppercase; margin-bottom:14px; font-weight:600;">
+        Contato
+      </p>
+
+      {% macro info_row(label, value, link=None) %}
+      <div style="display:flex; justify-content:space-between; gap:8px;
+                  padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.04);
+                  font-size:13px;">
+        <span style="color:var(--text3); flex-shrink:0;">{{ label }}</span>
+        {% if link and value and value != '—' %}
+        <a href="{{ link }}" style="color:var(--accent); text-decoration:none; word-break:break-all; text-align:right;">
+          {{ value }}
+        </a>
+        {% else %}
+        <span style="color:var(--text2); word-break:break-all; text-align:right;">
+          {{ value or '—' }}
+        </span>
+        {% endif %}
+      </div>
+      {% endmacro %}
+
+      {% set tel_raw = (cliente.whatsapp or cliente.telefone or '')|replace('(','') |replace(')','') |replace(' ','') |replace('-','') %}
+
+      {{ info_row('Telefone', cliente.telefone) }}
+      {{ info_row('WhatsApp', cliente.whatsapp,
+                  'https://wa.me/55' ~ tel_raw if tel_raw else None) }}
+      {{ info_row('E-mail', cliente.email,
+                  'mailto:' ~ cliente.email if cliente.email else None) }}
+      {{ info_row('Nascimento',
+                  cliente.data_nascimento.strftime('%d/%m/%Y') if cliente.data_nascimento else None) }}
+      {{ info_row('CPF', cliente.cpf) }}
+    </div>
+
+    <!-- Endereço -->
+    {% if cliente.endereco or cliente.cidade %}
+    <div class="card">
+      <p style="font-size:10px; color:var(--text3); letter-spacing:1.5px;
+                text-transform:uppercase; margin-bottom:14px; font-weight:600;">
+        Endereço
+      </p>
+      <p style="font-size:13px; color:var(--text2); line-height:1.7;">
+        {% if cliente.endereco %}{{ cliente.endereco }}<br>{% endif %}
+        {% if cliente.cidade %}{{ cliente.cidade }}{% if cliente.estado %} — {{ cliente.estado }}{% endif %}{% endif %}
+        {% if cliente.cep %}<br>CEP {{ cliente.cep }}{% endif %}
+      </p>
+    </div>
+    {% endif %}
+
+    <!-- Observações -->
+    {% if cliente.observacoes %}
+    <div class="card">
+      <p style="font-size:10px; color:var(--text3); letter-spacing:1.5px;
+                text-transform:uppercase; margin-bottom:10px; font-weight:600;">
+        ✎ Observações
+      </p>
+      <p style="font-size:13px; color:var(--text2); line-height:1.7;">
+        {{ cliente.observacoes }}
+      </p>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- ── HISTÓRICO ── -->
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:18px 20px 14px; border-bottom:1px solid var(--border);
+                display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="font-family:'Cinzel',serif; font-size:12px; color:var(--accent); letter-spacing:2px;">
+        HISTÓRICO DE SESSÕES
+      </h3>
+      <a href="{{ url_for('agenda.index') }}" class="btn btn-secondary btn-sm">
+        ◈ Ver agenda
+      </a>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Hora</th>
+            <th>Serviço</th>
+            <th class="hide-mobile">Valor</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ag in historico %}
+          <tr>
+            <td class="td-main">{{ ag.data_hora.strftime('%d/%m/%Y') }}</td>
+            <td>{{ ag.data_hora.strftime('%H:%M') }}</td>
+            <td>{{ ag.servico.nome }}</td>
+            <td class="hide-mobile">
+              {% if ag.orcamento_id %}
+                {% set orc = ag.orcamento %}
+                R$ {{ '%.2f'|format(orc.valor_final) if orc else '—' }}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <span class="badge badge-{{
+                'green'  if ag.status == 'realizado' else
+                'purple' if ag.status == 'agendado'  else
+                'red'
+              }}">{{ ag.status }}</span>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5">
+              <div class="empty-state" style="padding:36px 20px;">
+                <span class="empty-icon" style="font-size:28px;">◈</span>
+                <h3>Nenhuma sessão registrada</h3>
+                <p>
+                  <a href="{{ url_for('orcamentos.novo') }}?cliente_id={{ cliente.id }}"
+                     style="color:var(--accent);">Criar primeiro orçamento</a>
+                </p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<style>
+@media (max-width: 768px) {
+  .detalhe-grid { grid-template-columns: 1fr !important; }
+}
+</style>
+
+{% endblock %}

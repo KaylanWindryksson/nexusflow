@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% block title %}Agenda{% endblock %}
+{% block page_title %}Agenda{% endblock %}
+
+{% block topbar_actions %}
+<button onclick="openModal('modalAgenda')" class="btn btn-primary btn-sm">
+  <span>◈</span>
+  <span class="label">Agendar</span>
+</button>
+{% endblock %}
+
+{% block content %}
+
+{% set meses_nomes = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'] %}
+{% set dias_semana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'] %}
+
+{% if mes == 12 %}
+  {% set mes_anterior = 11 %} {% set ano_anterior = ano %}
+  {% set mes_proximo  = 1  %} {% set ano_proximo  = ano + 1 %}
+{% elif mes == 1 %}
+  {% set mes_anterior = 12 %} {% set ano_anterior = ano - 1 %}
+  {% set mes_proximo  = 2  %} {% set ano_proximo  = ano %}
+{% else %}
+  {% set mes_anterior = mes - 1 %} {% set ano_anterior = ano %}
+  {% set mes_proximo  = mes + 1 %} {% set ano_proximo  = ano %}
+{% endif %}
+
+<div class="agenda-grid" style="display:grid; grid-template-columns:1fr 300px; gap:16px; align-items:start;">
+
+  <!-- ── CALENDÁRIO ── -->
+  <div class="card" style="padding:20px;">
+
+    <!-- Navegação -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <a href="{{ url_for('agenda.index', mes=mes_anterior, ano=ano_anterior) }}"
+         class="btn btn-secondary btn-sm">‹</a>
+
+      <h3 style="font-family:'Cinzel',serif; font-size:14px; color:var(--accent); letter-spacing:2px;">
+        {{ meses_nomes[mes] }} {{ ano }}
+      </h3>
+
+      <a href="{{ url_for('agenda.index', mes=mes_proximo, ano=ano_proximo) }}"
+         class="btn btn-secondary btn-sm">›</a>
+    </div>
+
+    <!-- Cabeçalho dias da semana -->
+    <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:4px;">
+      {% for d in dias_semana %}
+      <div style="text-align:center; font-size:9px; color:var(--text3); letter-spacing:1px;
+                  text-transform:uppercase; padding:6px 2px;">{{ d }}</div>
+      {% endfor %}
+    </div>
+
+    <!-- Dias do mês -->
+    <div id="calendarGrid" style="display:grid; grid-template-columns:repeat(7,1fr); gap:3px;">
+    </div>
+
+  </div>
+
+  <!-- ── PAINEL LATERAL: eventos do dia ── -->
+  <div class="card" id="painelDia" style="min-height:200px;">
+    <h3 id="diaTitle" style="font-family:'Cinzel',serif; font-size:12px; color:var(--accent);
+                              letter-spacing:2px; margin-bottom:16px;">
+      SELECIONE UM DIA
+    </h3>
+    <div id="eventosDia">
+      <div class="empty-state" style="padding:24px 12px;">
+        <span class="empty-icon" style="font-size:28px;">◈</span>
+        <p>Clique em um dia para ver os agendamentos</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ── MODAL NOVO AGENDAMENTO ── -->
+<div class="modal-overlay" id="modalAgenda">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Novo Agendamento</h2>
+      <button class="modal-close" onclick="closeModal('modalAgenda')">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Cliente *</label>
+      <select id="agCliente" class="form-control">
+        <option value="">Selecione a cliente...</option>
+        {% for cl in clientes %}
+        <option value="{{ cl.id }}">{{ cl.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Serviço *</label>
+      <select id="agServico" class="form-control" onchange="updateDuracao()">
+        <option value="">Selecione o serviço...</option>
+        {% for sv in servicos %}
+        <option value="{{ sv.id }}" data-dur="{{ sv.duracao_minutos }}">
+          {{ sv.nome }} ({{ sv.duracao_minutos }}min)
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Data *</label>
+        <input type="date" id="agData" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hora *</label>
+        <input type="time" id="agHora" class="form-control" value="09:00">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Duração (minutos)</label>
+      <input type="number" id="agDuracao" class="form-control" value="60" min="15" step="15">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Observações</label>
+      <textarea id="agObs" class="form-control" rows="2"
+                placeholder="Anotações sobre a sessão..."></textarea>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modalAgenda')">
+        Cancelar
+      </button>
+      <button class="btn btn-primary" style="flex:2" onclick="salvarAgendamento()">
+        ◈ Agendar Sessão
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── STYLES ── -->
+<style>
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  gap: 3px;
+  -webkit-tap-highlight-color: transparent;
+  padding: 2px;
+}
+
+.cal-day:hover { background: rgba(200,170,255,0.1); color: var(--text); }
+
+.cal-day.today {
+  color: var(--accent);
+  font-weight: 700;
+  background: rgba(200,170,255,0.08);
+}
+
+.cal-day.selected {
+  background: rgba(200,170,255,0.2);
+  color: var(--accent);
+  border: 1px solid rgba(200,170,255,0.3);
+}
+
+.cal-day.other-month { opacity: 0.25; pointer-events: none; }
+
+.event-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent2);
+  flex-shrink: 0;
+}
+
+.event-dot.multiple {
+  background: var(--gold);
+}
+
+@media (max-width: 768px) {
+  .agenda-grid { grid-template-columns: 1fr !important; }
+  .cal-day { font-size: 11px; border-radius: 6px; }
+}
+</style>
+
+
+{% block scripts %}
+<script>
+// Dados dos eventos vindo do back-end
+const EVENTOS = {{ eventos_json | tojson }};
+const MES_ATUAL = {{ mes }};
+const ANO_ATUAL = {{ ano }};
+const HOJE = new Date();
+const MESES_NOMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho',
+                    'Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+// ── GERAR CALENDÁRIO ──
+function buildCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML = '';
+
+  const primeiroDia = new Date(ANO_ATUAL, MES_ATUAL - 1, 1);
+  const ultimoDia   = new Date(ANO_ATUAL, MES_ATUAL, 0);
+
+  // Dia da semana do primeiro dia (0=Dom)
+  let startDow = primeiroDia.getDay();
+
+  // Dias vazios antes
+  for (let i = 0; i < startDow; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'cal-day other-month';
+    grid.appendChild(empty);
+  }
+
+  const hojeStr = `${HOJE.getFullYear()}-${String(HOJE.getMonth()+1).padStart(2,'0')}-${String(HOJE.getDate()).padStart(2,'0')}`;
+
+  for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+
+    const isHoje = (dia === HOJE.getDate() && MES_ATUAL === HOJE.getMonth()+1 && ANO_ATUAL === HOJE.getFullYear());
+    if (isHoje) el.classList.add('today');
+
+    const evs = EVENTOS[dia] || [];
+    let html = `<span>${dia}</span>`;
+    if (evs.length === 1) html += `<div class="event-dot"></div>`;
+    else if (evs.length > 1) html += `<div class="event-dot multiple"></div>`;
+
+    el.innerHTML = html;
+    el.title = evs.length ? `${evs.length} agendamento(s)` : '';
+    el.onclick = () => mostrarDia(dia, el);
+    grid.appendChild(el);
+  }
+}
+
+// ── MOSTRAR EVENTOS DO DIA ──
+function mostrarDia(dia, elClicked) {
+  // Highlight selecionado
+  document.querySelectorAll('.cal-day.selected').forEach(e => e.classList.remove('selected'));
+  if (elClicked) elClicked.classList.add('selected');
+
+  const evs = EVENTOS[dia] || [];
+  document.getElementById('diaTitle').textContent =
+    `DIA ${String(dia).padStart(2,'0')} · ${MESES_NOMES[MES_ATUAL].toUpperCase()}`;
+
+  const container = document.getElementById('eventosDia');
+
+  if (!evs.length) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding:24px 12px;">
+        <span class="empty-icon" style="font-size:24px;">◈</span>
+        <p>Nenhum agendamento</p>
+      </div>`;
+    return;
+  }
+
+  const statusBadge = {
+    agendado:  'badge-purple',
+    realizado: 'badge-green',
+    cancelado: 'badge-red',
+  };
+
+  container.innerHTML = evs.map(ev => `
+    <div class="event-item">
+      <div class="event-time">${ev.hora}</div>
+      <div class="event-info">
+        <div class="event-client">${ev.cliente}</div>
+        <div class="event-service">${ev.servico} · ${ev.duracao}min</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+        <span class="badge ${statusBadge[ev.status] || 'badge-gray'}">${ev.status}</span>
+        ${ev.status === 'agendado' ? `
+          <button onclick="marcarRealizado(${ev.id})" class="btn btn-success btn-sm" style="padding:3px 8px;font-size:10px;">✓</button>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── ATUALIZAR DURAÇÃO CONFORME SERVIÇO ──
+function updateDuracao() {
+  const sel = document.getElementById('agServico');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt && opt.dataset.dur) {
+    document.getElementById('agDuracao').value = opt.dataset.dur;
+  }
+}
+
+// ── SALVAR AGENDAMENTO ──
+async function salvarAgendamento() {
+  const cliente  = document.getElementById('agCliente').value;
+  const servico  = document.getElementById('agServico').value;
+  const data     = document.getElementById('agData').value;
+  const hora     = document.getElementById('agHora').value;
+  const duracao  = document.getElementById('agDuracao').value;
+  const obs      = document.getElementById('agObs').value;
+
+  if (!cliente || !servico || !data || !hora) {
+    showNotification('⚠ Preencha todos os campos obrigatórios', 'danger');
+    return;
+  }
+
+  const res = await fetch('/agenda/api/criar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cliente_id: cliente, servico_id: servico,
+                           data, hora, duracao, obs }),
+  });
+
+  const json = await res.json();
+  if (json.ok) {
+    closeModal('modalAgenda');
+    showNotification('◈ Sessão agendada com sucesso!');
+    setTimeout(() => location.reload(), 1500);
+  } else {
+    showNotification(json.error || 'Erro ao agendar', 'danger');
+  }
+}
+
+// ── MARCAR REALIZADO ──
+async function marcarRealizado(id) {
+  const res = await fetch(`/agenda/api/${id}/realizado`, { method: 'POST' });
+  const json = await res.json();
+  if (json.ok) {
+    showNotification('✦ Sessão marcada como realizada!');
+    setTimeout(() => location.reload(), 1500);
+  }
+}
+
+// ── CANCELAR AGENDAMENTO ──
+async function cancelarAgendamento(id) {
+  if (!confirm('Cancelar este agendamento?')) return;
+  await fetch(`/agenda/api/${id}/cancelar`, { method: 'POST' });
+  showNotification('Agendamento cancelado.', 'warning');
+  setTimeout(() => location.reload(), 1500);
+}
+
+// ── INIT ──
+buildCalendar();
+
+// Definir data padrão no modal = hoje
+document.getElementById('agData').value =
+  new Date().toISOString().split('T')[0];
+
+// Se hoje tiver eventos, já mostrar
+const diaHoje = HOJE.getDate();
+if (MES_ATUAL === HOJE.getMonth() + 1 && ANO_ATUAL === HOJE.getFullYear()) {
+  const elHoje = document.querySelectorAll('.cal-day:not(.other-month)')[diaHoje - 1];
+  if (elHoje) mostrarDia(diaHoje, elHoje);
+}
+</script>
+{% endblock %}
+
+{% endblock %}

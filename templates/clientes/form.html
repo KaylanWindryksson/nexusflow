@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar — ' ~ cliente.nome if cliente else 'Nova Cliente' }}{% endblock %}
+{% block page_title %}{{ 'Editar Cliente' if cliente else 'Nova Cliente' }}{% endblock %}
+
+{% block content %}
+
+<div style="display:flex; gap:10px; margin-bottom:20px; align-items:center;">
+  <a href="{{ url_for('clientes.index') }}" class="btn btn-secondary btn-sm">← Clientes</a>
+  {% if cliente %}
+  <a href="{{ url_for('clientes.detalhe', id=cliente.id) }}" class="btn btn-secondary btn-sm">
+    Ver Perfil
+  </a>
+  {% endif %}
+</div>
+
+<div class="card" style="max-width:720px; margin:0 auto;">
+
+  <div style="margin-bottom:24px;">
+    <div class="modal-title" style="font-family:'Cormorant Garamond',serif; font-size:22px;
+         font-style:italic; color:var(--accent);">
+      {{ 'Editar dados da consulente' if cliente else 'Cadastrar nova consulente' }}
+    </div>
+    <p style="font-size:12px; color:var(--text3); margin-top:4px;">
+      Os campos marcados com * são obrigatórios
+    </p>
+  </div>
+
+  <form method="post">
+
+    <!-- DADOS PESSOAIS -->
+    <div style="margin-bottom:6px; padding-bottom:6px;">
+      <p style="font-size:10px; color:var(--text3); letter-spacing:1.5px;
+                text-transform:uppercase; margin-bottom:16px; font-weight:600;">
+        ◉ Dados Pessoais
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Nome Completo *</label>
+        <input type="text" name="nome" class="form-control" required
+               placeholder="Nome da cliente"
+               value="{{ cliente.nome if cliente else '' }}">
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input type="email" name="email" class="form-control"
+                 placeholder="email@exemplo.com"
+                 value="{{ cliente.email if cliente else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Data de Nascimento</label>
+          <input type="date" name="data_nascimento" class="form-control"
+                 value="{{ cliente.data_nascimento.strftime('%Y-%m-%d') if cliente and cliente.data_nascimento else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Telefone</label>
+          <input type="tel" name="telefone" class="form-control"
+                 placeholder="(11) 99999-9999"
+                 value="{{ cliente.telefone if cliente else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">WhatsApp</label>
+          <input type="tel" name="whatsapp" class="form-control"
+                 placeholder="(11) 99999-9999"
+                 value="{{ cliente.whatsapp if cliente else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">CPF</label>
+          <input type="text" name="cpf" class="form-control"
+                 placeholder="000.000.000-00"
+                 maxlength="14"
+                 value="{{ cliente.cpf if cliente else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Como nos Conheceu</label>
+          <select name="como_conheceu" class="form-control">
+            <option value="">Selecione...</option>
+            {% for opcao in ['Indicação','Instagram','Facebook','Google','Site','Evento','Outro'] %}
+            <option value="{{ opcao }}"
+              {{ 'selected' if cliente and cliente.como_conheceu == opcao else '' }}>
+              {{ opcao }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENDEREÇO -->
+    <div style="border-top:1px solid var(--border); margin:20px 0; padding-top:20px;">
+      <p style="font-size:10px; color:var(--text3); letter-spacing:1.5px;
+                text-transform:uppercase; margin-bottom:16px; font-weight:600;">
+        ◈ Endereço
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Logradouro</label>
+        <input type="text" name="endereco" class="form-control"
+               placeholder="Rua, número, bairro"
+               value="{{ cliente.endereco if cliente else '' }}">
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Cidade</label>
+          <input type="text" name="cidade" class="form-control"
+                 placeholder="São Paulo"
+                 value="{{ cliente.cidade if cliente else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <input type="text" name="estado" class="form-control"
+                 placeholder="SP" maxlength="2"
+                 value="{{ cliente.estado if cliente else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">CEP</label>
+          <input type="text" name="cep" class="form-control"
+                 placeholder="00000-000" maxlength="9"
+                 value="{{ cliente.cep if cliente else '' }}">
+        </div>
+      </div>
+    </div>
+
+    <!-- OBSERVAÇÕES -->
+    <div style="border-top:1px solid var(--border); margin:20px 0; padding-top:20px;">
+      <p style="font-size:10px; color:var(--text3); letter-spacing:1.5px;
+                text-transform:uppercase; margin-bottom:16px; font-weight:600;">
+        ✎ Observações
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Notas internas</label>
+        <textarea name="observacoes" class="form-control" rows="4"
+                  placeholder="Anotações importantes sobre a cliente, histórico relevante, preferências...">{{ cliente.observacoes if cliente else '' }}</textarea>
+        <div class="form-hint">Estas notas são visíveis apenas para você</div>
+      </div>
+    </div>
+
+    <!-- BOTÕES -->
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+      <a href="{{ url_for('clientes.index') }}" class="btn btn-secondary">
+        Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        ✦ {{ 'Salvar Alterações' if cliente else 'Cadastrar Cliente' }}
+      </button>
+    </div>
+
+  </form>
+</div>
+
+{% endblock %}

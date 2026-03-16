@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+{% block page_title %}Clientes{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('clientes.novo') }}" class="btn btn-primary btn-sm">
+  <span>◉</span>
+  <span class="label">Nova</span>
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Barra de busca -->
+<div style="display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
+  <form method="get" style="flex:1; min-width:200px; max-width:420px;">
+    <div class="search-wrap">
+      <span class="search-icon">⚲</span>
+      <input type="text" name="q" class="form-control"
+             placeholder="Buscar por nome, e-mail ou telefone..."
+             value="{{ q }}">
+    </div>
+  </form>
+
+  {% if q %}
+  <a href="{{ url_for('clientes.index') }}" class="btn btn-secondary btn-sm">✕ Limpar</a>
+  {% endif %}
+
+  <span style="font-size:12px; color:var(--text3); white-space:nowrap;">
+    {{ clientes|length }} cliente{{ 's' if clientes|length != 1 else '' }}
+  </span>
+</div>
+
+<!-- Tabela de clientes -->
+<div class="card" style="padding:0; overflow:hidden;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Telefone</th>
+          <th class="hide-mobile">E-mail</th>
+          <th class="hide-mobile">Cidade</th>
+          <th>Sessões</th>
+          <th>Cadastro</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cl in clientes %}
+        <tr style="cursor:pointer;" onclick="window.location='{{ url_for('clientes.detalhe', id=cl.id) }}'">
+          <td class="td-main">{{ cl.nome }}</td>
+          <td>{{ cl.telefone or cl.whatsapp or '—' }}</td>
+          <td class="hide-mobile" style="max-width:160px;" class="truncate">
+            {{ cl.email or '—' }}
+          </td>
+          <td class="hide-mobile">{{ cl.cidade or '—' }}</td>
+          <td>
+            <span class="badge badge-purple">
+              {{ cl.agendas.filter_by(status='realizado').count() }}
+            </span>
+          </td>
+          <td style="font-size:12px; color:var(--text3);">
+            {{ cl.criado_em.strftime('%d/%m/%y') }}
+          </td>
+          <td onclick="event.stopPropagation()">
+            <div style="display:flex; gap:6px;">
+              <a href="{{ url_for('clientes.detalhe', id=cl.id) }}"
+                 class="btn btn-secondary btn-sm">Ver</a>
+              <a href="{{ url_for('clientes.editar', id=cl.id) }}"
+                 class="btn btn-primary btn-sm">Editar</a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <span class="empty-icon">◉</span>
+              <h3>Nenhuma cliente encontrada</h3>
+              <p>
+                {% if q %}
+                  Tente outros termos de busca
+                {% else %}
+                  <a href="{{ url_for('clientes.novo') }}" style="color:var(--accent);">
+                    Cadastre a primeira cliente
+                  </a>
+                {% endif %}
+              </p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
