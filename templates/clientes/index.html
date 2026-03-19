@@ -77,13 +77,13 @@
           <td colspan="7">
             <div class="empty-state">
               <span class="empty-icon">◉</span>
-              <h3>Nenhuma cliente encontrada</h3>
+              <h3>Nenhum cliente encontrado</h3>
               <p>
                 {% if q %}
                   Tente outros termos de busca
                 {% else %}
                   <a href="{{ url_for('clientes.novo') }}" style="color:var(--accent);">
-                    Cadastre a primeira cliente
+                    Cadastre o primeiro cliente
                   </a>
                 {% endif %}
               </p>

@@ -3,129 +3,254 @@
 {% block page_title %}Novo Orçamento{% endblock %}
 
 {% block content %}
-
-<div style="display:flex; gap:10px; margin-bottom:20px;">
-  <a href="{{ url_for('orcamentos.index') }}" class="btn btn-secondary btn-sm">
-    ← Orçamentos
-  </a>
+<div style="display:flex;gap:10px;margin-bottom:20px;">
+  <a href="{{ url_for('orcamentos.index') }}" class="btn btn-secondary btn-sm">← Orçamentos</a>
 </div>
 
-<div class="card" style="max-width:620px; margin:0 auto;">
-
+<div class="card" style="max-width:680px;margin:0 auto;">
   <div style="margin-bottom:24px;">
-    <div style="font-family:'Cormorant Garamond',serif; font-size:22px;
-                font-style:italic; color:var(--accent);">
-      Criar Orçamento
-    </div>
-    <p style="font-size:12px; color:var(--text3); margin-top:4px;">
-      Preencha os dados para gerar o orçamento da consulente
-    </p>
+    <div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--text);">Criar Orçamento</div>
+    <p style="font-size:12px;color:var(--text3);margin-top:4px;">Preencha os dados para gerar o orçamento</p>
   </div>
 
-  <form method="post" id="formOrcamento">
+  <form method="post" id="formOrc">
 
+    <!-- ── BUSCA DE CLIENTE ── -->
     <div class="form-group">
-      <label class="form-label">Cliente *</label>
-      <select name="cliente_id" class="form-control" required>
-        <option value="">Selecione a cliente...</option>
-        {% for cl in clientes %}
-        <option value="{{ cl.id }}"
-          {{ 'selected' if cliente_id and cl.id == cliente_id|int else '' }}>
-          {{ cl.nome }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
+      <label class="form-label">Cliente <span style="color:var(--danger)">*</span></label>
 
-    <div class="form-group">
-      <label class="form-label">Serviço *</label>
-      <select name="servico_id" class="form-control" required
-              id="selectServico" onchange="atualizarValor()">
-        <option value="">Selecione o serviço...</option>
-        {% for sv in servicos %}
-        <option value="{{ sv.id }}"
-                data-valor="{{ sv.valor }}"
-                data-dur="{{ sv.duracao_minutos }}">
-          {{ sv.nome }} — {{ sv.duracao_minutos }}min — R$ {{ '%.2f'|format(sv.valor) }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
+      <!-- Campo de busca visível -->
+      <div style="position:relative;">
+        <input type="text" id="clienteBusca" class="form-control"
+               placeholder="Digite o nome ou CPF do cliente..."
+               autocomplete="off"
+               oninput="buscarCliente(this.value)">
 
-    <!-- Resumo de valores -->
-    <div style="background:rgba(200,170,255,0.05); border:1px solid var(--border);
-                border-radius:12px; padding:16px; margin:16px 0;" id="boxValores">
+        <!-- Dropdown de resultados -->
+        <div id="clienteDropdown" style="
+          display:none;position:absolute;top:100%;left:0;right:0;
+          background:var(--bg2);border:1px solid var(--border);
+          border-radius:10px;margin-top:4px;z-index:100;
+          max-height:240px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.12);
+        "></div>
+      </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-        <div class="form-group" style="margin:0;">
-          <label class="form-label">Valor do Serviço</label>
-          <input type="text" id="displayValor" class="form-control"
-                 placeholder="—" readonly
-                 style="opacity:0.6; cursor:default;">
+      <!-- Card do cliente selecionado -->
+      <div id="clienteSelecionado" style="display:none;margin-top:10px;
+           background:var(--blue-50);border:1px solid var(--blue-200);
+           border-radius:10px;padding:12px 14px;display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--blue-800)" id="clienteNomeCard">—</div>
+            <div style="font-size:12px;color:var(--blue-600);margin-top:2px" id="clienteInfoCard">—</div>
+          </div>
+          <button type="button" onclick="limparCliente()"
+                  style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px;">✕</button>
         </div>
+      </div>
 
+      <!-- Input hidden enviado no form -->
+      <input type="hidden" name="cliente_id" id="clienteIdHidden" required>
+    </div>
+
+    <!-- ── SERVIÇOS (múltiplos) ── -->
+    <div class="form-group">
+      <label class="form-label">Serviços <span style="color:var(--danger)">*</span></label>
+
+      <!-- Lista de serviços adicionados -->
+      <div id="listaServicos" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+
+      <!-- Botão para adicionar serviço -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="selectServico" class="form-control" style="flex:1;min-width:200px;">
+          <option value="">Selecionar serviço...</option>
+          {% for sv in servicos %}
+          <option value="{{ sv.id }}"
+                  data-nome="{{ sv.nome }}"
+                  data-valor="{{ sv.valor }}"
+                  data-dur="{{ sv.duracao_minutos }}">
+            {{ sv.nome }} — R$ {{ '%.2f'|format(sv.valor) }} ({{ sv.duracao_minutos }}min)
+          </option>
+          {% endfor %}
+        </select>
+        <button type="button" onclick="adicionarServico()"
+                class="btn btn-primary" style="white-space:nowrap;">
+          + Adicionar
+        </button>
+      </div>
+      <div class="form-hint">Você pode adicionar quantos serviços precisar</div>
+    </div>
+
+    <!-- ── RESUMO DE VALORES ── -->
+    <div style="background:var(--blue-50);border:1px solid var(--blue-200);
+                border-radius:12px;padding:16px;margin:8px 0 16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Subtotal dos serviços</label>
+          <input type="text" id="displaySubtotal" class="form-control"
+                 placeholder="R$ 0,00" readonly
+                 style="opacity:0.7;cursor:default;font-weight:600;">
+        </div>
         <div class="form-group" style="margin:0;">
           <label class="form-label">Desconto (R$)</label>
           <input type="number" name="desconto" id="inputDesconto"
                  class="form-control" value="0" min="0" step="0.01"
-                 oninput="calcularFinal()">
+                 oninput="recalcular()">
         </div>
       </div>
-
-      <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-size:11px; color:var(--text3); letter-spacing:1px; text-transform:uppercase;">
-            Total
-          </span>
-          <span id="displayFinal"
-                style="font-family:'Cinzel',serif; font-size:20px; color:var(--accent3);">
-            —
-          </span>
-        </div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--blue-200);
+                  display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;font-weight:600;color:var(--blue-700);text-transform:uppercase;letter-spacing:0.5px;">Total</span>
+        <span id="displayTotal" style="font-size:24px;font-weight:700;color:var(--blue-800);">R$ 0,00</span>
       </div>
     </div>
 
     <div class="form-group">
       <label class="form-label">Observações</label>
       <textarea name="observacoes" class="form-control" rows="3"
-                placeholder="Validade do orçamento, condições especiais, anotações..."></textarea>
+                placeholder="Condições, validade do orçamento, anotações..."></textarea>
     </div>
 
-    <!-- Botões -->
-    <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
-      <a href="{{ url_for('orcamentos.index') }}"
-         class="btn btn-secondary" style="flex:1;">Cancelar</a>
-      <button type="submit" class="btn btn-primary" style="flex:2;">
-        ◇ Criar Orçamento
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <a href="{{ url_for('orcamentos.index') }}" class="btn btn-secondary" style="flex:1;">Cancelar</a>
+      <button type="submit" class="btn btn-primary" style="flex:2;" onclick="return validarForm()">
+        Criar Orçamento
       </button>
     </div>
-
   </form>
 </div>
 
-
 {% block scripts %}
 <script>
-let valorBase = 0;
+// ── BUSCA DE CLIENTES ──────────────────────────────────────────
+let buscaTimer = null;
 
-function atualizarValor() {
-  const sel  = document.getElementById('selectServico');
-  const opt  = sel.options[sel.selectedIndex];
-  valorBase  = parseFloat(opt.dataset.valor || 0);
-
-  document.getElementById('displayValor').value =
-    valorBase ? 'R$ ' + valorBase.toFixed(2).replace('.', ',') : '—';
-
-  calcularFinal();
+function buscarCliente(valor) {
+  clearTimeout(buscaTimer);
+  const dropdown = document.getElementById('clienteDropdown');
+  if (valor.length < 2) { dropdown.style.display = 'none'; return; }
+  buscaTimer = setTimeout(async () => {
+    const res = await fetch(`/orcamentos/api/clientes?q=${encodeURIComponent(valor)}`);
+    const lista = await res.json();
+    if (!lista.length) {
+      dropdown.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:var(--text3);">Nenhum cliente encontrado</div>';
+    } else {
+      dropdown.innerHTML = lista.map(c => `
+        <div onclick="selecionarCliente(${c.id},'${c.nome.replace(/'/g,"\\'")}','${c.cpf}','${c.telefone}')"
+             style="padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;"
+             onmouseover="this.style.background='var(--blue-50)'"
+             onmouseout="this.style.background='transparent'">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${c.nome}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">
+            ${c.cpf ? 'CPF: ' + c.cpf : ''}${c.cpf && c.telefone ? ' · ' : ''}${c.telefone || ''}
+          </div>
+        </div>`).join('');
+    }
+    dropdown.style.display = 'block';
+  }, 280);
 }
 
-function calcularFinal() {
-  const desc  = parseFloat(document.getElementById('inputDesconto').value || 0);
-  const final = Math.max(0, valorBase - desc);
-  document.getElementById('displayFinal').textContent =
-    valorBase ? 'R$ ' + final.toFixed(2).replace('.', ',') : '—';
+function selecionarCliente(id, nome, cpf, tel) {
+  document.getElementById('clienteIdHidden').value = id;
+  document.getElementById('clienteBusca').value = nome;
+  document.getElementById('clienteDropdown').style.display = 'none';
+  document.getElementById('clienteNomeCard').textContent = nome;
+  const info = [cpf ? 'CPF: ' + cpf : '', tel || ''].filter(Boolean).join(' · ');
+  document.getElementById('clienteInfoCard').textContent = info || 'Cliente selecionado';
+  document.getElementById('clienteSelecionado').style.display = 'block';
+  document.getElementById('clienteBusca').style.display = 'none';
+}
+
+function limparCliente() {
+  document.getElementById('clienteIdHidden').value = '';
+  document.getElementById('clienteBusca').value = '';
+  document.getElementById('clienteBusca').style.display = 'block';
+  document.getElementById('clienteSelecionado').style.display = 'none';
+  document.getElementById('clienteDropdown').style.display = 'none';
+  document.getElementById('clienteBusca').focus();
+}
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', e => {
+  if (!e.target.closest('#clienteBusca') && !e.target.closest('#clienteDropdown')) {
+    document.getElementById('clienteDropdown').style.display = 'none';
+  }
+});
+
+// ── PRÉ-SELECIONAR CLIENTE VIA URL ─────────────────────────────
+{% if cliente_id %}
+(async () => {
+  const res = await fetch(`/orcamentos/api/clientes?q={{ clientes | selectattr('id','equalto', cliente_id|int) | map(attribute='nome') | first | default('') }}`);
+  {% for cl in clientes %}{% if cl.id == (cliente_id|int) %}
+  selecionarCliente({{ cl.id }}, '{{ cl.nome }}', '{{ cl.cpf or "" }}', '{{ cl.whatsapp or cl.telefone or "" }}');
+  {% endif %}{% endfor %}
+})();
+{% endif %}
+
+// ── MÚLTIPLOS SERVIÇOS ─────────────────────────────────────────
+let servicosSelecionados = [];
+
+function adicionarServico() {
+  const sel = document.getElementById('selectServico');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt.value) { showNotification('Selecione um serviço', 'warning'); return; }
+
+  const id    = opt.value;
+  const nome  = opt.dataset.nome;
+  const valor = parseFloat(opt.dataset.valor);
+  const dur   = parseInt(opt.dataset.dur);
+
+  servicosSelecionados.push({ id, nome, valor, dur });
+  renderServicos();
+  sel.value = '';
+}
+
+function removerServico(idx) {
+  servicosSelecionados.splice(idx, 1);
+  renderServicos();
+}
+
+function renderServicos() {
+  const container = document.getElementById('listaServicos');
+  if (!servicosSelecionados.length) {
+    container.innerHTML = '';
+    recalcular();
+    return;
+  }
+  container.innerHTML = servicosSelecionados.map((sv, i) => `
+    <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);
+                border:1px solid var(--border);border-radius:9px;padding:10px 14px;">
+      <input type="hidden" name="servico_ids[]" value="${sv.id}">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${sv.nome}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">${sv.dur} min · R$ ${sv.valor.toFixed(2).replace('.',',')}</div>
+      </div>
+      <button type="button" onclick="removerServico(${i})"
+              style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);
+                     color:var(--danger);border-radius:7px;padding:4px 10px;cursor:pointer;
+                     font-size:12px;font-weight:600;">Remover</button>
+    </div>`).join('');
+  recalcular();
+}
+
+function recalcular() {
+  const subtotal  = servicosSelecionados.reduce((s, sv) => s + sv.valor, 0);
+  const desconto  = parseFloat(document.getElementById('inputDesconto').value || 0);
+  const total     = Math.max(0, subtotal - desconto);
+  const fmt = v => 'R$ ' + v.toFixed(2).replace('.', ',');
+  document.getElementById('displaySubtotal').value = subtotal ? fmt(subtotal) : '';
+  document.getElementById('displayTotal').textContent = fmt(total);
+}
+
+function validarForm() {
+  if (!document.getElementById('clienteIdHidden').value) {
+    showNotification('Selecione um cliente', 'danger'); return false;
+  }
+  if (!servicosSelecionados.length) {
+    showNotification('Adicione pelo menos um servico', 'danger'); return false;
+  }
+  return true;
 }
 </script>
 {% endblock %}
-
 {% endblock %}

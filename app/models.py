@@ -16,7 +16,7 @@ class Usuario(UserMixin, db.Model):
     senha      = db.Column(db.String(256), nullable=False)
     is_admin   = db.Column(db.Boolean, default=False)
     ativo      = db.Column(db.Boolean, default=True)
-    plano      = db.Column(db.String(20), default='basic')  # free / basic / pro
+    plano      = db.Column(db.String(20), default='basic')
     criado_em  = db.Column(db.DateTime, default=datetime.utcnow)
 
     clientes   = db.relationship('Cliente',   backref='usuario', lazy='dynamic')
@@ -64,7 +64,7 @@ class Orcamento(db.Model):
     id               = db.Column(db.Integer, primary_key=True)
     usuario_id       = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     cliente_id       = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
-    servico_id       = db.Column(db.Integer, db.ForeignKey('servicos.id'), nullable=False)
+    servico_id       = db.Column(db.Integer, db.ForeignKey('servicos.id'), nullable=True)
     data_orcamento   = db.Column(db.Date, default=datetime.utcnow)
     data_agendamento = db.Column(db.DateTime)
     valor            = db.Column(db.Float, nullable=False)
@@ -74,6 +74,39 @@ class Orcamento(db.Model):
     observacoes      = db.Column(db.Text)
     confirmado_em    = db.Column(db.DateTime)
     criado_em        = db.Column(db.DateTime, default=datetime.utcnow)
+
+    servico = db.relationship('Servico', foreign_keys=[servico_id])
+    itens   = db.relationship('OrcamentoItem', backref='orcamento',
+                               lazy='dynamic', cascade='all, delete-orphan')
+
+    @property
+    def servico_nome(self):
+        itens_lista = self.itens.all()
+        if itens_lista:
+            return ', '.join(i.servico.nome for i in itens_lista)
+        return self.servico.nome if self.servico else 'Orçamento'
+
+    @property
+    def duracao_total(self):
+        itens_lista = self.itens.all()
+        if itens_lista:
+            return sum(i.servico.duracao_minutos for i in itens_lista)
+        return self.servico.duracao_minutos if self.servico else 60
+
+    @property
+    def servico_principal_id(self):
+        primeiro = self.itens.first()
+        if primeiro:
+            return primeiro.servico_id
+        return self.servico_id
+
+
+class OrcamentoItem(db.Model):
+    __tablename__ = 'orcamento_itens'
+    id           = db.Column(db.Integer, primary_key=True)
+    orcamento_id = db.Column(db.Integer, db.ForeignKey('orcamentos.id'), nullable=False)
+    servico_id   = db.Column(db.Integer, db.ForeignKey('servicos.id'), nullable=False)
+    valor        = db.Column(db.Float, nullable=False)
 
     servico = db.relationship('Servico')
 
@@ -92,5 +125,4 @@ class Agenda(db.Model):
     criado_em       = db.Column(db.DateTime, default=datetime.utcnow)
 
     servico   = db.relationship('Servico')
-    # ↓ relacionamento adicionado — necessário para exibir valor no histórico
     orcamento = db.relationship('Orcamento', foreign_keys=[orcamento_id])

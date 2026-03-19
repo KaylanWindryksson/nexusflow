@@ -34,8 +34,39 @@ VERDE_BG     = colors.HexColor('#d1fae5')
 W, H = A4  # 595.27 x 841.89 points
 
 
-def gerar_pdf_orcamento(orcamento, cliente, servico, usuario):
-    """Gera PDF profissional do orçamento e retorna bytes."""
+def gerar_pdf_orcamento(orcamento, cliente, servico_ou_orc, usuario):
+    """
+    Gera PDF profissional do orçamento.
+    servico_ou_orc pode ser um Servico (legado) ou o próprio Orcamento
+    (para suportar múltiplos itens).
+    """
+    # Determinar lista de itens para exibir
+    itens_lista = []
+    try:
+        itens_db = orcamento.itens.all()
+        if itens_db:
+            for item in itens_db:
+                itens_lista.append({
+                    'nome': item.servico.nome,
+                    'descricao': item.servico.descricao or '',
+                    'duracao': item.servico.duracao_minutos,
+                    'valor': item.valor,
+                })
+    except Exception:
+        pass
+
+    # Fallback para orçamento de serviço único (legado)
+    if not itens_lista:
+        sv = servico_ou_orc if hasattr(servico_ou_orc, 'nome') else None
+        if sv is None and hasattr(orcamento, 'servico') and orcamento.servico:
+            sv = orcamento.servico
+        if sv:
+            itens_lista.append({
+                'nome': sv.nome,
+                'descricao': sv.descricao or '',
+                'duracao': sv.duracao_minutos,
+                'valor': orcamento.valor,
+            })
     buffer = io.BytesIO()
 
     doc = SimpleDocTemplate(
@@ -159,15 +190,24 @@ def gerar_pdf_orcamento(orcamento, cliente, servico, usuario):
     story.append(cli_table)
 
     # ══════════════════════════════════════════
-    # SERVIÇO
+    # SERVICOS PROPOSTOS (suporta multiplos)
     # ══════════════════════════════════════════
-    story.append(Paragraph('SERVIÇO PROPOSTO', s_section))
+    titulo_secao = 'SERVICOS PROPOSTOS' if len(itens_lista) > 1 else 'SERVICO PROPOSTO'
+    story.append(Paragraph(titulo_secao, s_section))
 
-    srv_data = [
-        [Paragraph('Serviço', s_label),    Paragraph(servico.nome, s_value)],
-        [Paragraph('Descrição', s_label),  Paragraph(servico.descricao or '—', s_value)],
-        [Paragraph('Duração', s_label),    Paragraph(f'{servico.duracao_minutos} minutos', s_value)],
-    ]
+    srv_data = []
+    for idx, item in enumerate(itens_lista):
+        prefixo = f'Servico {idx+1}' if len(itens_lista) > 1 else 'Servico'
+        srv_data.append([Paragraph(prefixo, s_label), Paragraph(item['nome'], s_value)])
+        if item['descricao']:
+            srv_data.append([Paragraph('Descricao', s_label), Paragraph(item['descricao'], s_value)])
+        srv_data.append([Paragraph('Duracao', s_label), Paragraph(f'{item["duracao"]} minutos', s_value)])
+        if len(itens_lista) > 1:
+            srv_data.append([Paragraph('Valor unit.', s_label),
+                             Paragraph(f'R$ {item["valor"]:.2f}', s_value)])
+
+    if not srv_data:
+        srv_data = [[Paragraph('Servico', s_label), Paragraph('—', s_value)]]
 
     srv_table = Table(srv_data, colWidths=[3.5 * cm, 13.5 * cm])
     srv_table.setStyle(TableStyle([
@@ -186,7 +226,7 @@ def gerar_pdf_orcamento(orcamento, cliente, servico, usuario):
     story.append(Paragraph('VALORES', s_section))
 
     val_rows = [
-        [Paragraph('Valor do serviço', s_value),
+        [Paragraph('Subtotal dos servicos', s_value),
          Paragraph(f'R$ {orcamento.valor:.2f}', style('vr', fontName='Helvetica', fontSize=11, textColor=CINZA_TEXT, alignment=TA_RIGHT))],
     ]
 

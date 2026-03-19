@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}{{ 'Editar — ' ~ cliente.nome if cliente else 'Nova Cliente' }}{% endblock %}
-{% block page_title %}{{ 'Editar Cliente' if cliente else 'Nova Cliente' }}{% endblock %}
+{% block title %}{{ 'Editar — ' ~ cliente.nome if cliente else 'Novo Cliente' }}{% endblock %}
+{% block page_title %}{{ 'Editar Cliente' if cliente else 'Novo Cliente' }}{% endblock %}
 
 {% block content %}
 
@@ -19,7 +19,7 @@
   <div style="margin-bottom:24px;">
     <div class="modal-title" style="font-family:'Cormorant Garamond',serif; font-size:22px;
          font-style:italic; color:var(--accent);">
-      {{ 'Editar dados da consulente' if cliente else 'Cadastrar nova consulente' }}
+      {{ 'Editar dados do cliente' if cliente else 'Cadastrar novo cliente' }}
     </div>
     <p style="font-size:12px; color:var(--text3); margin-top:4px;">
       Os campos marcados com * são obrigatórios
@@ -38,7 +38,7 @@
       <div class="form-group">
         <label class="form-label">Nome Completo *</label>
         <input type="text" name="nome" class="form-control" required
-               placeholder="Nome da cliente"
+               placeholder="Nome do cliente"
                value="{{ cliente.nome if cliente else '' }}">
       </div>
 
@@ -52,8 +52,21 @@
 
         <div class="form-group">
           <label class="form-label">Data de Nascimento</label>
-          <input type="date" name="data_nascimento" class="form-control"
+          <input type="text"
+                 id="data_nascimento_display"
+                 class="form-control"
+                 placeholder="DD/MM/AAAA"
+                 inputmode="numeric"
+                 maxlength="10"
+                 autocomplete="off"
+                 oninput="mascararData(this)"
+                 value="{{ cliente.data_nascimento.strftime('%d/%m/%Y') if cliente and cliente.data_nascimento else '' }}">
+          <!-- Campo hidden que envia no formato YYYY-MM-DD para o Python -->
+          <input type="hidden"
+                 name="data_nascimento"
+                 id="data_nascimento_hidden"
                  value="{{ cliente.data_nascimento.strftime('%Y-%m-%d') if cliente and cliente.data_nascimento else '' }}">
+          <div class="form-hint">Digite no formato DD/MM/AAAA — ex: 25/12/1990</div>
         </div>
 
         <div class="form-group">
@@ -141,7 +154,7 @@
       <div class="form-group">
         <label class="form-label">Notas internas</label>
         <textarea name="observacoes" class="form-control" rows="4"
-                  placeholder="Anotações importantes sobre a cliente, histórico relevante, preferências...">{{ cliente.observacoes if cliente else '' }}</textarea>
+                  placeholder="Anotações importantes sobre o cliente, histórico relevante, preferências...">{{ cliente.observacoes if cliente else '' }}</textarea>
         <div class="form-hint">Estas notas são visíveis apenas para você</div>
       </div>
     </div>
@@ -159,4 +172,24 @@
   </form>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+function mascararData(input) {
+  let v = input.value.replace(/\D/g, '');
+  if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+  if (v.length > 5) v = v.slice(0,5) + '/' + v.slice(5);
+  input.value = v.slice(0, 10);
+
+  // Converte para YYYY-MM-DD no hidden field
+  const partes = input.value.split('/');
+  if (partes.length === 3 && partes[2].length === 4) {
+    document.getElementById('data_nascimento_hidden').value =
+      `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
+  } else {
+    document.getElementById('data_nascimento_hidden').value = '';
+  }
+}
+</script>
 {% endblock %}
