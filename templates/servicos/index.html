@@ -4,14 +4,12 @@
 
 {% block topbar_actions %}
 <button onclick="abrirModalNovo()" class="btn btn-primary btn-sm">
-  <span>❋</span>
-  <span class="label">Novo</span>
+  + <span class="label">Novo</span>
 </button>
 {% endblock %}
 
 {% block content %}
-
-<div class="card" style="padding:0; overflow:hidden;">
+<div class="card" style="padding:0;overflow:hidden;">
   <div class="table-wrap">
     <table>
       <thead>
@@ -28,12 +26,11 @@
         {% for sv in servicos %}
         <tr>
           <td class="td-main">{{ sv.nome }}</td>
-          <td class="hide-mobile" style="max-width:200px; overflow:hidden;
-              text-overflow:ellipsis; white-space:nowrap; color:var(--text3); font-size:12px;">
+          <td class="hide-mobile" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3);font-size:12px;">
             {{ sv.descricao or '—' }}
           </td>
           <td style="white-space:nowrap;">{{ sv.duracao_minutos }} min</td>
-          <td style="white-space:nowrap; color:var(--accent3);">
+          <td style="white-space:nowrap;color:var(--success);">
             R$ {{ '%.2f'|format(sv.valor) }}
           </td>
           <td>
@@ -42,20 +39,17 @@
             </span>
           </td>
           <td>
-            <div style="display:flex; gap:6px;">
-              <button onclick="abrirModalEditar(
-                {{ sv.id }},
-                {{ sv.nome | tojson }},
-                {{ (sv.descricao or '') | tojson }},
-                {{ sv.duracao_minutos }},
-                {{ sv.valor }},
-                {{ sv.ativo | tojson }}
-              )" class="btn btn-primary btn-sm">Editar</button>
-
-              <button onclick="toggleServico({{ sv.id }}, {{ sv.ativo | tojson }})"
-                      class="btn btn-sm {{ 'btn-danger' if sv.ativo else 'btn-success' }}">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button onclick="abrirModalEditar({{ sv.id }}, {{ sv.nome|tojson }},
+                              {{ (sv.descricao or '')|tojson }},
+                              {{ sv.duracao_minutos }}, {{ sv.valor }}, {{ sv.ativo|tojson }})"
+                      class="btn btn-primary btn-sm">Editar</button>
+              <button onclick="toggleServico({{ sv.id }}, {{ sv.ativo|tojson }})"
+                      class="btn btn-sm {{ 'btn-warning' if sv.ativo else 'btn-success' }}">
                 {{ 'Desativar' if sv.ativo else 'Ativar' }}
               </button>
+              <button onclick='confirmarExcluirServico({{ sv.id }}, {{ sv.nome|tojson }})'
+                      class="btn btn-danger btn-sm">Excluir</button>
             </div>
           </td>
         </tr>
@@ -63,7 +57,7 @@
         <tr>
           <td colspan="6">
             <div class="empty-state">
-              <span class="empty-icon">❋</span>
+              <span class="empty-icon">⚡</span>
               <h3>Nenhum serviço cadastrado</h3>
               <p>Cadastre os serviços que você oferece</p>
             </div>
@@ -75,60 +69,67 @@
   </div>
 </div>
 
-
-<!-- ── MODAL CRIAR / EDITAR SERVIÇO ── -->
+<!-- Modal criar/editar -->
 <div class="modal-overlay" id="modalServico">
   <div class="modal">
     <div class="modal-header">
       <h2 class="modal-title" id="modalServicoTitulo">Novo Serviço</h2>
       <button class="modal-close" onclick="closeModal('modalServico')">✕</button>
     </div>
-
     <input type="hidden" id="svId">
-
     <div class="form-group">
-      <label class="form-label">Nome do Serviço *</label>
-      <input type="text" id="svNome" class="form-control"
-             placeholder="Ex: Massagem, Limpeza sofá...">
+      <label class="form-label">Nome *</label>
+      <input type="text" id="svNome" class="form-control" placeholder="Ex: Reiki, Consulta, Aula...">
     </div>
-
     <div class="form-group">
       <label class="form-label">Descrição</label>
-      <textarea id="svDescricao" class="form-control" rows="2"
-                placeholder="Breve descrição do serviço..."></textarea>
+      <textarea id="svDescricao" class="form-control" rows="2"></textarea>
     </div>
-
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">Duração (minutos) *</label>
+        <label class="form-label">Duração (minutos)</label>
         <select id="svDuracao" class="form-control">
-          {% for dur in [30, 45, 60, 75, 90, 120] %}
-          <option value="{{ dur }}" {{ 'selected' if dur == 60 else '' }}>
-            {{ dur }} min
-          </option>
+          {% for dur in [30,45,60,75,90,120] %}
+          <option value="{{ dur }}" {{ 'selected' if dur==60 else '' }}>{{ dur }} min</option>
           {% endfor %}
         </select>
       </div>
-
       <div class="form-group">
         <label class="form-label">Valor (R$) *</label>
-        <input type="number" id="svValor" class="form-control"
-               step="0.01" min="0" placeholder="0,00">
+        <input type="number" id="svValor" class="form-control" step="0.01" min="0" placeholder="0,00">
       </div>
     </div>
-
-    <div style="display:flex; gap:10px; margin-top:20px;">
-      <button class="btn btn-secondary" style="flex:1"
-              onclick="closeModal('modalServico')">Cancelar</button>
-      <button class="btn btn-primary" style="flex:2"
-              onclick="salvarServico()">✦ Salvar Serviço</button>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modalServico')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="salvarServico()">Salvar serviço</button>
     </div>
   </div>
 </div>
 
+<!-- Modal excluir serviço -->
+<div class="modal-overlay" id="modalExcluirServico">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <h2 class="modal-title" style="color:var(--danger);">Excluir serviço</h2>
+      <button class="modal-close" onclick="closeModal('modalExcluirServico')">✕</button>
+    </div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:16px;">
+      Deseja excluir o serviço <strong id="nomeServicoExcluir" style="color:var(--text);"></strong>?
+    </p>
+    <div class="alert alert-warning" style="font-size:13px;">
+      ⚠ Serviços com atendimentos realizados não podem ser excluídos — use "Desativar" para ocultá-los.
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modalExcluirServico')">Cancelar</button>
+      <button class="btn btn-danger" style="flex:1;" onclick="excluirServico()">Confirmar</button>
+    </div>
+  </div>
+</div>
 
-{% block scripts %}
+{% endblock %}{% block scripts %}
 <script>
+let svExcluirId = null;
+
 function abrirModalNovo() {
   document.getElementById('modalServicoTitulo').textContent = 'Novo Serviço';
   document.getElementById('svId').value = '';
@@ -139,7 +140,7 @@ function abrirModalNovo() {
   openModal('modalServico');
 }
 
-function abrirModalEditar(id, nome, desc, dur, valor, ativo) {
+function abrirModalEditar(id, nome, desc, dur, valor) {
   document.getElementById('modalServicoTitulo').textContent = 'Editar Serviço';
   document.getElementById('svId').value = id;
   document.getElementById('svNome').value = nome;
@@ -150,51 +151,45 @@ function abrirModalEditar(id, nome, desc, dur, valor, ativo) {
 }
 
 async function salvarServico() {
-  const nome = document.getElementById('svNome').value.trim();
+  const nome  = document.getElementById('svNome').value.trim();
   const valor = document.getElementById('svValor').value;
-
-  if (!nome || !valor) {
-    showNotification('⚠ Preencha nome e valor', 'danger');
-    return;
-  }
-
+  if (!nome || !valor) { showNotification('Preencha nome e valor', 'danger'); return; }
   const id = document.getElementById('svId').value;
-  const payload = {
-    id: id || null,
-    nome,
-    descricao: document.getElementById('svDescricao').value,
-    duracao:   document.getElementById('svDuracao').value,
-    valor:     parseFloat(valor),
-  };
-
   const res = await fetch('/servicos/api/salvar', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ id: id || null, nome,
+      descricao: document.getElementById('svDescricao').value,
+      duracao:   document.getElementById('svDuracao').value,
+      valor:     parseFloat(valor) }),
   });
-
   const json = await res.json();
-  if (json.ok) {
-    closeModal('modalServico');
-    showNotification('❋ Serviço salvo com sucesso!');
-    setTimeout(() => location.reload(), 1400);
-  } else {
-    showNotification('Erro ao salvar serviço', 'danger');
-  }
+  if (json.ok) { closeModal('modalServico'); showNotification('Serviço salvo!'); setTimeout(()=>location.reload(),1400); }
+  else showNotification('Erro ao salvar', 'danger');
 }
 
 async function toggleServico(id, ativo) {
-  const acao = ativo ? 'desativar' : 'ativar';
-  if (!confirm(`Deseja ${acao} este serviço?`)) return;
+  await fetch(`/servicos/api/${id}/toggle`, { method:'POST' });
+  showNotification(ativo ? 'Serviço desativado' : 'Serviço ativado!');
+  setTimeout(()=>location.reload(), 1200);
+}
 
-  const res = await fetch(`/servicos/api/${id}/toggle`, { method: 'POST' });
+function confirmarExcluirServico(id, nome) {
+  svExcluirId = id;
+  document.getElementById('nomeServicoExcluir').textContent = nome;
+  openModal('modalExcluirServico');
+}
+
+async function excluirServico() {
+  const res  = await fetch(`/servicos/api/${svExcluirId}/excluir`, { method:'POST' });
   const json = await res.json();
   if (json.ok) {
-    showNotification(ativo ? 'Serviço desativado' : '✦ Serviço ativado!');
-    setTimeout(() => location.reload(), 1200);
+    closeModal('modalExcluirServico');
+    showNotification('Serviço excluído.');
+    setTimeout(()=>location.reload(), 1200);
+  } else {
+    closeModal('modalExcluirServico');
+    showNotification(json.error, 'warning');
   }
 }
 </script>
-{% endblock %}
-
 {% endblock %}

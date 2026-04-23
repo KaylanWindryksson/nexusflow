@@ -33,7 +33,7 @@ def novo():
         servico_ids = request.form.getlist('servico_ids[]')
 
         if not cliente_id:
-            flash('Selecione um cliente.', 'danger')
+            flash('Selecione uma cliente.', 'danger')
             return render_template('orcamentos/form.html', clientes=clientes,
                                    servicos=servicos, cliente_id=cliente_id)
 
@@ -144,3 +144,22 @@ def cancelar(id):
     orc.status = 'cancelado'
     db.session.commit()
     return jsonify({'ok': True})
+
+
+@orcamentos_bp.route('/<int:id>/excluir', methods=['POST'])
+@login_required
+def excluir(id):
+    """Exclui orçamento e seus itens. Não exclui agendamentos vinculados."""
+    orc = Orcamento.query.filter_by(id=id, usuario_id=current_user.id).first_or_404()
+
+    if orc.status == 'confirmado':
+        from flask import flash
+        flash('Orçamentos confirmados não podem ser excluídos. Cancele primeiro.', 'danger')
+        return redirect(url_for('orcamentos.index'))
+
+    OrcamentoItem.query.filter_by(orcamento_id=id).delete()
+    db.session.delete(orc)
+    db.session.commit()
+    from flask import flash
+    flash('Orçamento excluído.', 'success')
+    return redirect(url_for('orcamentos.index'))

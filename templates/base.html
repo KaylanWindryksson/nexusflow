@@ -14,22 +14,20 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='favicon3.png') }}">
 </head>
 <body>
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
 <aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-    </div>
-    <div class="logo-text">
-      <h1>NexusFlow</h1>
-      <p>Gestão completa</p>
-    </div>
+  <div class="sidebar-logo" style="padding:16px 20px;">
+    <a href="{{ url_for('dashboard.index') }}">
+      <img src="{{ url_for('static', filename='logo.png') }}"
+          alt="NexusFlow"
+          style="height:36px;width:auto;mix-blend-mode:screen;">
+    </a>
   </div>
-
   <nav class="sidebar-nav">
     <div class="nav-section-title">Menu principal</div>
 

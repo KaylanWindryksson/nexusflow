@@ -4,16 +4,13 @@
 
 {% block topbar_actions %}
 <a href="{{ url_for('clientes.novo') }}" class="btn btn-primary btn-sm">
-  <span>◉</span>
-  <span class="label">Nova</span>
+  + <span class="label">Nova</span>
 </a>
 {% endblock %}
 
 {% block content %}
-
-<!-- Barra de busca -->
-<div style="display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
-  <form method="get" style="flex:1; min-width:200px; max-width:420px;">
+<div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+  <form method="get" style="flex:1;min-width:200px;max-width:420px;">
     <div class="search-wrap">
       <span class="search-icon">⚲</span>
       <input type="text" name="q" class="form-control"
@@ -21,18 +18,15 @@
              value="{{ q }}">
     </div>
   </form>
-
   {% if q %}
   <a href="{{ url_for('clientes.index') }}" class="btn btn-secondary btn-sm">✕ Limpar</a>
   {% endif %}
-
-  <span style="font-size:12px; color:var(--text3); white-space:nowrap;">
+  <span style="font-size:12px;color:var(--text3);white-space:nowrap;">
     {{ clientes|length }} cliente{{ 's' if clientes|length != 1 else '' }}
   </span>
 </div>
 
-<!-- Tabela de clientes -->
-<div class="card" style="padding:0; overflow:hidden;">
+<div class="card" style="padding:0;overflow:hidden;">
   <div class="table-wrap">
     <table>
       <thead>
@@ -42,49 +36,44 @@
           <th class="hide-mobile">E-mail</th>
           <th class="hide-mobile">Cidade</th>
           <th>Sessões</th>
-          <th>Cadastro</th>
           <th>Ações</th>
         </tr>
       </thead>
       <tbody>
         {% for cl in clientes %}
-        <tr style="cursor:pointer;" onclick="window.location='{{ url_for('clientes.detalhe', id=cl.id) }}'">
-          <td class="td-main">{{ cl.nome }}</td>
-          <td>{{ cl.telefone or cl.whatsapp or '—' }}</td>
-          <td class="hide-mobile" style="max-width:160px;" class="truncate">
-            {{ cl.email or '—' }}
+        <tr>
+          <td class="td-main">
+            <a href="{{ url_for('clientes.detalhe', id=cl.id) }}"
+               style="color:var(--text);text-decoration:none;">{{ cl.nome }}</a>
           </td>
+          <td>{{ cl.telefone or cl.whatsapp or '—' }}</td>
+          <td class="hide-mobile">{{ cl.email or '—' }}</td>
           <td class="hide-mobile">{{ cl.cidade or '—' }}</td>
           <td>
-            <span class="badge badge-purple">
+            <span class="badge badge-blue">
               {{ cl.agendas.filter_by(status='realizado').count() }}
             </span>
           </td>
-          <td style="font-size:12px; color:var(--text3);">
-            {{ cl.criado_em.strftime('%d/%m/%y') }}
-          </td>
-          <td onclick="event.stopPropagation()">
-            <div style="display:flex; gap:6px;">
+          <td>
+            <div style="display:flex;gap:6px;align-items:center;">
               <a href="{{ url_for('clientes.detalhe', id=cl.id) }}"
                  class="btn btn-secondary btn-sm">Ver</a>
               <a href="{{ url_for('clientes.editar', id=cl.id) }}"
                  class="btn btn-primary btn-sm">Editar</a>
+              <button onclick="confirmarExclusao({{ cl.id }}, '{{ cl.nome|replace("'","\\'") }}')"
+                      class="btn btn-danger btn-sm">Excluir</button>
             </div>
           </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="7">
+          <td colspan="6">
             <div class="empty-state">
-              <span class="empty-icon">◉</span>
+              <span class="empty-icon">👥</span>
               <h3>Nenhum cliente encontrado</h3>
               <p>
-                {% if q %}
-                  Tente outros termos de busca
-                {% else %}
-                  <a href="{{ url_for('clientes.novo') }}" style="color:var(--accent);">
-                    Cadastre o primeiro cliente
-                  </a>
+                {% if q %}Tente outros termos de busca
+                {% else %}<a href="{{ url_for('clientes.novo') }}" style="color:var(--accent);">Cadastre o primeiro cliente</a>
                 {% endif %}
               </p>
             </div>
@@ -96,4 +85,39 @@
   </div>
 </div>
 
+<!-- Modal de confirmação de exclusão -->
+<div class="modal-overlay" id="modalExcluir">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <h2 class="modal-title" style="color:var(--danger);">Excluir cliente</h2>
+      <button class="modal-close" onclick="closeModal('modalExcluir')">✕</button>
+    </div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:8px;">
+      Tem certeza que deseja excluir o cliente
+      <strong id="nomeClienteExcluir" style="color:var(--text);"></strong>?
+    </p>
+    <div class="alert alert-danger" style="font-size:13px;">
+      ⚠ Esta ação é irreversível. Todos os agendamentos e orçamentos deste cliente também serão excluídos.
+    </div>
+    <form id="formExcluir" method="post" style="margin-top:20px;">
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn btn-secondary" style="flex:1;"
+                onclick="closeModal('modalExcluir')">Cancelar</button>
+        <button type="submit" class="btn btn-danger" style="flex:1;">
+          Confirmar exclusão
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+function confirmarExclusao(id, nome) {
+  document.getElementById('nomeClienteExcluir').textContent = nome;
+  document.getElementById('formExcluir').action = `/clientes/${id}/excluir`;
+  openModal('modalExcluir');
+}
+</script>
+{% endblock %}
 {% endblock %}

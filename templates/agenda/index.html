@@ -85,7 +85,7 @@
     <div class="form-group">
       <label class="form-label">Cliente *</label>
       <select id="agCliente" class="form-control">
-        <option value="">Selecione o cliente...</option>
+        <option value="">Selecione a cliente...</option>
         {% for cl in clientes %}
         <option value="{{ cl.id }}">{{ cl.nome }}</option>
         {% endfor %}
@@ -191,6 +191,30 @@
 </style>
 
 
+
+<!-- Modal excluir agendamento -->
+<div class="modal-overlay" id="modalExcluirAg">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <h2 class="modal-title" style="color:var(--danger);">Excluir agendamento</h2>
+      <button class="modal-close" onclick="closeModal('modalExcluirAg')">✕</button>
+    </div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:16px;">
+      Deseja excluir o agendamento de
+      <strong id="nomeAgExcluir" style="color:var(--text);"></strong>?
+    </p>
+    <div class="alert alert-warning" style="font-size:13px;">
+      ⚠ Atendimentos já realizados não podem ser excluídos — fazem parte do histórico.
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-secondary" style="flex:1;"
+              onclick="closeModal('modalExcluirAg')">Cancelar</button>
+      <button class="btn btn-danger" style="flex:1;"
+              onclick="excluirAgendamento()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 {% block scripts %}
 <script>
 // Dados dos eventos vindo do back-end
@@ -278,6 +302,7 @@ function mostrarDia(dia, elClicked) {
         <span class="badge ${statusBadge[ev.status] || 'badge-gray'}">${ev.status}</span>
         ${ev.status === 'agendado' ? `
           <button onclick="marcarRealizado(${ev.id})" class="btn btn-success btn-sm" style="padding:3px 8px;font-size:10px;">✓</button>
+          <button onclick="confirmarExcluirAgendamento(${ev.id}, ev.cliente)" class="btn btn-danger btn-sm" style="padding:3px 8px;font-size:10px;">🗑</button>
         ` : ''}
       </div>
     </div>
@@ -340,6 +365,25 @@ async function cancelarAgendamento(id) {
   await fetch(`/agenda/api/${id}/cancelar`, { method: 'POST' });
   showNotification('Agendamento cancelado.', 'warning');
   setTimeout(() => location.reload(), 1500);
+}
+
+let agExcluirId = null;
+function confirmarExcluirAgendamento(id, nome) {
+  agExcluirId = id;
+  document.getElementById('nomeAgExcluir').textContent = nome || 'este agendamento';
+  openModal('modalExcluirAg');
+}
+
+async function excluirAgendamento() {
+  const res  = await fetch(`/agenda/api/${agExcluirId}/excluir`, { method:'POST' });
+  const json = await res.json();
+  closeModal('modalExcluirAg');
+  if (json.ok) {
+    showNotification('Agendamento excluído.');
+    setTimeout(() => location.reload(), 1300);
+  } else {
+    showNotification(json.error, 'warning');
+  }
 }
 
 // ── INIT ──

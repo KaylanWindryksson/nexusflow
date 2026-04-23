@@ -13,7 +13,6 @@ def index():
     uid  = current_user.id
     hoje = datetime.now()
 
-    # Métricas do mês atual — usa extract() para compatibilidade pg8000
     total_clientes = Cliente.query.filter_by(usuario_id=uid).count()
 
     sessoes_mes = (Agenda.query
@@ -23,7 +22,6 @@ def index():
                    .filter(db.extract('month', Agenda.data_hora) == hoje.month)
                    .count())
 
-    # Receita do mês: soma valor_final dos orçamentos confirmados com agendamento no mês
     orc_mes = (Orcamento.query
                .filter_by(usuario_id=uid, status='confirmado')
                .filter(Orcamento.data_agendamento.isnot(None))
@@ -34,14 +32,12 @@ def index():
 
     pendentes = Orcamento.query.filter_by(usuario_id=uid, status='pendente').count()
 
-    # Próximas 5 sessões agendadas
     proximos = (Agenda.query
                 .filter_by(usuario_id=uid, status='agendado')
                 .filter(Agenda.data_hora >= hoje)
                 .order_by(Agenda.data_hora)
                 .limit(5).all())
 
-    # Clientes inativos há mais de 90 dias
     tres_meses = hoje - timedelta(days=90)
     todos = Cliente.query.filter_by(usuario_id=uid).all()
     inativos = []

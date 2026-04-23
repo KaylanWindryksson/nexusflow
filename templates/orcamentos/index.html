@@ -4,19 +4,19 @@
 
 {% block topbar_actions %}
 <a href="{{ url_for('orcamentos.novo') }}" class="btn btn-primary btn-sm">
-  <span>◇</span> <span class="label">Novo</span>
+  + <span class="label">Novo</span>
 </a>
 {% endblock %}
 
 {% block content %}
-<div class="card">
+<div class="card" style="padding:0;overflow:hidden;">
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>#</th>
           <th>Cliente</th>
-          <th>Serviço</th>
+          <th>Serviço(s)</th>
           <th class="hide-mobile">Data</th>
           <th>Valor</th>
           <th>Status</th>
@@ -26,28 +26,32 @@
       <tbody>
         {% for orc in orcamentos %}
         <tr>
-          <td style="color:var(--text3);font-size:11px">#{{ '%04d' % orc.id }}</td>
+          <td style="color:var(--text3);font-size:11px;">#{{ '%04d' % orc.id }}</td>
           <td class="td-main">{{ orc.cliente.nome }}</td>
-          <td>{{ orc.servico.nome }}</td>
+          <td style="font-size:12px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ orc.servico_nome }}
+          </td>
           <td class="hide-mobile">{{ orc.data_orcamento.strftime('%d/%m/%Y') }}</td>
-          <td>R$ {{ '%.2f'|format(orc.valor_final) }}</td>
+          <td style="white-space:nowrap;">R$ {{ '%.2f'|format(orc.valor_final) }}</td>
           <td>
-            <span class="badge badge-{{ 'gold' if orc.status=='pendente' else ('green' if orc.status=='confirmado' else 'red') }}">
-              {{ orc.status }}
-            </span>
+            <span class="badge badge-{{
+              'amber' if orc.status=='pendente' else
+              ('green' if orc.status=='confirmado' else 'red')
+            }}">{{ orc.status }}</span>
           </td>
           <td>
-            <div class="flex gap-2">
-              <!-- Botão PDF sempre disponível -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
               <a href="{{ url_for('orcamentos.pdf', id=orc.id) }}" target="_blank"
-                 class="btn btn-gold btn-sm" title="Baixar PDF do Orçamento">
-                📄
-              </a>
+                 class="btn btn-secondary btn-sm" title="Gerar PDF">📄</a>
               {% if orc.status == 'pendente' %}
               <button onclick="confirmarOrcamento({{ orc.id }})"
                       class="btn btn-success btn-sm">✓</button>
-              <button onclick="cancelar({{ orc.id }})"
-                      class="btn btn-danger btn-sm">✕</button>
+              <button onclick="confirmarCancelar({{ orc.id }})"
+                      class="btn btn-warning btn-sm">✕</button>
+              {% endif %}
+              {% if orc.status != 'confirmado' %}
+              <button onclick="confirmarExcluirOrc({{ orc.id }}, '#{{ '%04d' % orc.id }}')"
+                      class="btn btn-danger btn-sm">🗑</button>
               {% endif %}
             </div>
           </td>
@@ -56,9 +60,9 @@
         <tr>
           <td colspan="7">
             <div class="empty-state">
-              <span class="empty-icon">◇</span>
+              <span class="empty-icon">📋</span>
               <h3>Nenhum orçamento ainda</h3>
-              <p>Crie seu primeiro orçamento</p>
+              <p><a href="{{ url_for('orcamentos.novo') }}" style="color:var(--accent);">Criar primeiro orçamento</a></p>
             </div>
           </td>
         </tr>
@@ -68,12 +72,42 @@
   </div>
 </div>
 
+<!-- Modal excluir orçamento -->
+<div class="modal-overlay" id="modalExcluirOrc">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <h2 class="modal-title" style="color:var(--danger);">Excluir orçamento</h2>
+      <button class="modal-close" onclick="closeModal('modalExcluirOrc')">✕</button>
+    </div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:16px;">
+      Deseja excluir o orçamento <strong id="numOrcExcluir" style="color:var(--text);"></strong>?
+    </p>
+    <div class="alert alert-danger" style="font-size:13px;">
+      ⚠ Orçamentos confirmados não podem ser excluídos — apenas cancelados ou pendentes.
+    </div>
+    <form id="formExcluirOrc" method="post" style="margin-top:20px;">
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn btn-secondary" style="flex:1;"
+                onclick="closeModal('modalExcluirOrc')">Cancelar</button>
+        <button type="submit" class="btn btn-danger" style="flex:1;">Confirmar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% block scripts %}
 <script>
-async function cancelar(id) {
+function confirmarExcluirOrc(id, num) {
+  document.getElementById('numOrcExcluir').textContent = num;
+  document.getElementById('formExcluirOrc').action = `/orcamentos/${id}/excluir`;
+  openModal('modalExcluirOrc');
+}
+
+async function confirmarCancelar(id) {
   if (!confirm('Cancelar este orçamento?')) return;
-  await fetch(`/orcamentos/${id}/cancelar`, { method: 'POST' });
-  location.reload();
+  const res  = await fetch(`/orcamentos/${id}/cancelar`, { method:'POST' });
+  const json = await res.json();
+  if (json.ok) { showNotification('Orçamento cancelado.'); setTimeout(()=>location.reload(),1200); }
 }
 </script>
 {% endblock %}

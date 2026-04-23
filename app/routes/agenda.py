@@ -95,3 +95,20 @@ def api_cancelar(id):
     ag.status = 'cancelado'
     db.session.commit()
     return jsonify({'ok': True})
+
+
+@agenda_bp.route('/api/<int:id>/excluir', methods=['POST'])
+@login_required
+def api_excluir(id):
+    """Exclui agendamento. Só permite excluir se não estiver realizado."""
+    ag = Agenda.query.filter_by(id=id, usuario_id=current_user.id).first_or_404()
+
+    if ag.status == 'realizado':
+        return jsonify({
+            'ok': False,
+            'error': 'Atendimentos já realizados não podem ser excluídos — fazem parte do histórico.'
+        })
+
+    db.session.delete(ag)
+    db.session.commit()
+    return jsonify({'ok': True})
